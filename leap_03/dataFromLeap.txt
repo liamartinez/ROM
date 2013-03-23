@@ -1,1 +1,1 @@
-[{"minute":9,"count":1,"month":2,"year":2013,"hour":17,"day":23,"angle":38.633079528808594},{"minute":9,"count":2,"month":2,"year":2013,"hour":17,"day":23,"angle":17.5899658203125}]
+[{"minute":14,"count":1,"month":3,"year":2013,"hour":4,"day":23,"angle":10.462236404418945},{"minute":14,"count":2,"month":3,"year":2013,"hour":4,"day":23,"angle":76.76863861083984}]

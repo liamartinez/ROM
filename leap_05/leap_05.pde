@@ -1,0 +1,137 @@
+import com.onformative.leap.LeapMotionP5; /* https://github.com/mrzl/LeapMotionP5 */
+import com.leapmotion.leap.Finger;
+import com.leapmotion.leap.Hand; 
+
+import org.json.*;
+
+LeapMotionP5 leap;
+leapObj theLeap; 
+
+/* 0 - Extension; //bending up 
+ 1 - Flexion; //bending down
+ 2 - Supination; //rotate palm up 
+ 3 - Pronation; //rotate palm down 
+ */
+
+Viz[] vis = new Viz [4]; 
+
+int totalTime = 5000; 
+int timer; 
+
+JSONArray data;
+ArrayList <Val> values;
+PrintWriter output; 
+
+void setup () {
+  size (340, 800); 
+  leap = new LeapMotionP5(this);
+  theLeap = new leapObj();
+
+  values = new ArrayList(); 
+
+  vis[0] = new Viz("Extension");
+  vis[0].setRange (-60, "max"); 
+  vis[0].setInstructions("Palm face up. Bend down."); 
+
+  vis[1] = new Viz ("Flexion"); 
+  vis[1].setRange (-80, "max"); 
+  vis[1].setInstructions("Palm face down. Bend down."); 
+
+  vis[2] = new Viz ("Supination"); 
+  vis[2].setRange (-50, "min"); 
+  vis[2].setInstructions("Rotate so palm faces up"); 
+
+  vis[3] = new Viz ("Pronation"); 
+  vis[3].setRange (50, "min"); 
+  vis[3].setInstructions("Rotate so palm faces down");
+}
+
+void draw () {
+
+  background (0); 
+
+  vis[0].setValue(theLeap.getPitch()); 
+  vis[1].setValue(theLeap.getPitch()); 
+  vis[2].setValue(theLeap.getRoll()); 
+  vis[3].setValue(theLeap.getRoll()); 
+
+  for (int i = 0; i < vis.length; i++) {
+    pushMatrix(); 
+    translate (0, i*150); 
+    vis[i].display();
+    popMatrix();
+  }
+
+  pushMatrix();
+  translate (0, 150*(vis.length-1));  
+  scale (.7); 
+  theLeap.display(); 
+  popMatrix();
+  theLeap.showMsg(50, height - 50);
+
+  for (int i = 0; i < vis.length; i++) {
+    if (vis[i].recording) {
+      if ((millis() - timer) > totalTime) {
+        saveFinalVal (i, vis[i].computeVal()); 
+        vis[i].recording = false;
+      }
+    }
+  }
+}
+
+void keyPressed () {
+  if (key == '1') vis[0].record(); 
+  if (key == '2') vis[1].record(); 
+  if (key == '3') vis[2].record(); 
+  if (key == '4') vis[3].record();
+  timer = millis();
+}
+
+boolean saveFinalVal(int modeNum, float theValue) {
+
+  Val thisVal = new Val(); 
+  thisVal.count = values.size() + 1; 
+  thisVal.day = day(); 
+  thisVal.month = month(); 
+  thisVal.year = year(); 
+  thisVal.minute = minute();
+  thisVal.second = second(); 
+  thisVal.hour = hour(); 
+  thisVal.value = theValue; 
+  thisVal.mode = modeNum; 
+
+  values.add(thisVal); 
+
+  data = new JSONArray(); 
+  for (int i = 0; i < values.size(); i++) {
+    Val val = (Val) values.get(i);
+    JSONObject thisData = new JSONObject();
+    try {
+      thisData.put ("count", val.count);
+      thisData.put ("month", val.month); 
+      thisData.put( "day", val.day );
+      thisData.put( "year", val.year);
+      thisData.put( "hour", val.hour );
+      thisData.put( "minute", val.minute );
+      thisData.put( "value", val.value );
+      thisData.put ("mode", val.mode);
+    }
+    catch(JSONException e) {
+      e.getCause();
+    }
+    data.put( thisData );
+  }
+
+  println ("************************************************");
+  println( data );
+  output = createWriter ("dataFromLeap.txt"); 
+  output.println (data); 
+  output.flush(); 
+
+  return true;
+}
+
+public void stop() {
+  theLeap.stop();
+}
+
