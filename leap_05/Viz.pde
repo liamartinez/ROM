@@ -11,6 +11,10 @@ class Viz {
   float value; 
   float startVal, endVal, finalVal; 
   float newEndVal; //constrained
+  
+  //history
+  float lastVal; 
+  boolean showLast = false; 
 
   //margins 
   int mTop = 35; 
@@ -66,10 +70,15 @@ class Viz {
     fill (200, 0, 0); 
     if (recording) {
       rect (mSides, mTop, newEndVal, rH);
-      
+      println (newEndVal); 
     } 
     else {
-      rect (mSides, mTop, 0, rH); //fill in with last value
+      rect (mSides, mTop, lastVal, rH); //fill in with last value
+    }
+    
+    if (showLast) {
+      fill (0, 255, 0, 100); 
+      rect (mSides, mTop, lastVal, rH);
     }
 
     //this is just the border
@@ -95,7 +104,13 @@ class Viz {
     }
   }
 
-
+  float showHist(float value_) {
+    //lastVal = value_; 
+    showLast = true; 
+    return lastVal; 
+    //show the history as gradients
+  }
+  
   boolean saveStartVal() {
     startVal = newEndVal; 
     finalVal = 0; 
@@ -111,13 +126,16 @@ class Viz {
   }
 
   float computeVal() {
-    finalVal = abs(newEndVal - startVal);
+    if (!isMin) {
+      finalVal = abs(newEndVal - startVal);
+    } else {
+      finalVal = newEndVal; 
+    }    
+    lastVal = finalVal; 
     return finalVal;
   }
 
-  void showHist() {
-    //show the history as gradients
-  }
+
 
 
   //-------------- For displaying raw values for debugging --------------------//

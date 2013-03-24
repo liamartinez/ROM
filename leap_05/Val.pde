@@ -1,5 +1,7 @@
 class Val {
 
+  Val(){}
+  
   int mode; 
   /* 0 - Extension; //bending up 
      1 - Flexion; //bending down
@@ -9,7 +11,7 @@ class Val {
  
   int count; 
   int year, month, day; 
-  int hour, minute, second;
+  int hour, minute;
   
   float value; 
 }
