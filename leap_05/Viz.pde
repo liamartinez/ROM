@@ -11,7 +11,8 @@ class Viz {
   float value; 
   float startVal, endVal, finalVal; 
   float newEndVal; //constrained
-  
+  ArrayList <Val> values;
+
   //history
   float lastVal; 
   boolean showLast = false; 
@@ -26,6 +27,7 @@ class Viz {
 
   Viz(String title_) {
     title = title_;
+    values = new ArrayList();
   }
 
   void setRange(int rangeNum, String minOrMax) {
@@ -45,7 +47,7 @@ class Viz {
 
   void setValue (float value_) {
     value = value_; //these should be the same thing. fix.
-    endVal = value_; 
+    endVal = value_;
   }
 
   void display() {
@@ -70,12 +72,11 @@ class Viz {
     fill (200, 0, 0); 
     if (recording) {
       rect (mSides, mTop, newEndVal, rH);
-      println (newEndVal); 
     } 
     else {
       rect (mSides, mTop, lastVal, rH); //fill in with last value
     }
-    
+
     if (showLast) {
       fill (0, 255, 0, 100); 
       rect (mSides, mTop, lastVal, rH);
@@ -110,7 +111,7 @@ class Viz {
     return lastVal; 
     //show the history as gradients
   }
-  
+
   boolean saveStartVal() {
     startVal = newEndVal; 
     finalVal = 0; 
@@ -120,7 +121,7 @@ class Viz {
   void record () {
     println ("recording"); 
     if (saveStartVal()) {
-    recording = true; 
+      recording = true;
     }
     //blinking lights, countdown
   }
@@ -128,14 +129,17 @@ class Viz {
   float computeVal() {
     if (!isMin) {
       finalVal = abs(newEndVal - startVal);
-    } else {
-      finalVal = newEndVal; 
+    } 
+    else {
+      finalVal = newEndVal;
     }    
-    lastVal = finalVal; 
     return finalVal;
   }
 
-
+  float getLastVal() {
+    Val tVal = (Val) values.get(values.size()-1);
+    return tVal.value;
+  }
 
 
   //-------------- For displaying raw values for debugging --------------------//
@@ -169,6 +173,86 @@ class Viz {
     stroke (255); 
     fill(255); 
     text (instructions, mSides, mTop+rH+mTop);
+  }
+
+
+
+  //------------------------------------- JSON -----------------------//
+
+  boolean saveFinalVal(int modeNum, float theValue) {
+
+    Val thisVal = new Val(); 
+    thisVal.count = values.size() + 1; 
+    thisVal.day = day(); 
+    thisVal.month = month(); 
+    thisVal.year = year(); 
+    thisVal.minute = minute();
+    thisVal.hour = hour(); 
+    thisVal.value = theValue; 
+    thisVal.mode = modeNum; 
+
+    values.add(thisVal); 
+
+    data = new JSONArray(); 
+    for (int i = 0; i < values.size(); i++) {
+      Val val = (Val) values.get(i);
+      JSONObject thisData = new JSONObject();
+      try {
+        thisData.put ("count", val.count);
+        thisData.put ("month", val.month); 
+        thisData.put( "day", val.day );
+        thisData.put( "year", val.year);
+        thisData.put( "hour", val.hour );
+        thisData.put( "minute", val.minute );
+        thisData.put( "value", val.value );
+        thisData.put ("mode", val.mode);
+
+        lastVal =  getLastVal();
+        println ("new last val is: " + lastVal);
+      }
+      catch(JSONException e) {
+        e.getCause();
+      }
+      data.put( thisData );
+    }
+
+    println ("************************************************");
+    println( data );
+    //output = createWriter ("dataFromLeap.txt"); 
+    output = createWriter (modeNum + "_" + title + ".json"); 
+    output.println (data); 
+    output.flush(); 
+
+    return true;
+  }
+
+
+  void loadValues(String filename) {
+
+    try {
+      String result = join (loadStrings(filename), "");
+      JSONArray results = new JSONArray (result); 
+
+      println (results.length()); 
+      for (int i = 0; i < results.length(); i++) {
+        JSONObject thisObj = results.getJSONObject(i);
+        Val thisVal = new Val(); 
+        thisVal.day = thisObj.getInt ("day"); 
+        thisVal.month = thisObj.getInt ("month"); 
+        thisVal.year = thisObj.getInt ("year"); 
+        thisVal.minute = thisObj.getInt ("minute"); 
+        thisVal.hour = thisObj.getInt ("hour"); 
+        double temp = thisObj.getDouble ("value"); 
+        thisVal.value = (float)temp; 
+        thisVal.mode =thisObj.getInt ("mode"); 
+        values.add (thisVal); 
+        println ("added: " + i);
+      }
+      lastVal =  getLastVal();
+    } 
+    catch (JSONException e) {
+      println ("error: " + e);
+    }
   }
 }
 
