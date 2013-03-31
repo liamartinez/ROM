@@ -1,7 +1,5 @@
 class Val {
 
-  Val(){}
-  
   int mode; 
   /* 0 - Extension; //bending up 
      1 - Flexion; //bending down
@@ -14,4 +12,11 @@ class Val {
   int hour, minute;
   
   float value; 
+  
+  PImage pic; 
+  String picName = "none"; 
+  
+  Val(){
+  pic = createImage (160, 120, RGB);  
+  }
 }

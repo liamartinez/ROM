@@ -2,6 +2,8 @@ class leapObj {
 
   String message; 
   float pitch, roll, yaw; 
+  
+  boolean allowRecord; 
 
   leapObj() {
   }
@@ -10,11 +12,14 @@ class leapObj {
 
     if (leap.getHandList().size() < 1) {
       message = "No hand detected.";
+      allowRecord = false; 
     } 
     else if (leap.getHandList().size() > 1) {
       message = "More than 1 hand detected.";
+      allowRecord = false; 
     } 
     else {
+      allowRecord = true; 
       for (Finger finger : leap.getFingerList()) {
         PVector fingerPos = leap.getTip(finger);
         fill (255, 0, 0); 

@@ -2,6 +2,9 @@ import com.onformative.leap.LeapMotionP5; /* https://github.com/mrzl/LeapMotionP
 import com.leapmotion.leap.Finger;
 import com.leapmotion.leap.Hand; 
 
+import processing.video.*;
+Capture video;
+
 /* //for processing 2.8
  import org.json.JSONObject;
  import org.json.JSONArray;
@@ -20,6 +23,9 @@ leapObj theLeap;
  */
 
 Viz[] vis = new Viz [4]; 
+int curViz; 
+int [] curNum = new int[vis.length]; 
+boolean showCam = false; 
 
 int totalTime = 5000; 
 int timer; 
@@ -29,9 +35,12 @@ JSONArray data;
 PrintWriter output; 
 
 void setup () {
-  size (340, 800); 
+  size (500, 800); 
   leap = new LeapMotionP5(this);
   theLeap = new leapObj();
+
+  video = new Capture(this, 160, 120);
+  video.start();  
 
   vis[0] = new Viz("Extension");
   vis[0].setRange (-60, "max"); 
@@ -48,16 +57,20 @@ void setup () {
   vis[3] = new Viz ("Pronation"); 
   vis[3].setRange (20, "min"); 
   vis[3].setInstructions("Rotate so palm faces down");
-  
-    for (int i = 0; i < vis.length; i++) {
-      vis[i].loadValues(i + "_" + vis[i].title + ".json"); 
-      println ("loading: " + i + "_" + vis[i].title + ".json"); 
-    }
+
+  for (int i = 0; i < vis.length; i++) {
+    println ("loading: " + i + "_" + vis[i].title + ".json");
+    vis[i].loadValues(i + "_" + vis[i].title + ".json");     
+  }
 }
 
 void draw () {
 
   background (0); 
+
+  if (video.available() == true) {
+    video.read();
+  }
 
   vis[0].setValue(theLeap.getPitch()); 
   vis[1].setValue(theLeap.getPitch()); 
@@ -80,21 +93,85 @@ void draw () {
   theLeap.showMsg(50, height - 50);
 
   for (int i = 0; i < vis.length; i++) {
+    if (i == curViz) {
+      vis[i].setCur (true);
+      pushMatrix();
+      translate (0, 150*i);  
+      if (showCam) image(video, vis[curViz].camLoc, 20);
+      popMatrix();
+    } 
+    else {
+      vis[i].setCur(false);
+    }
+
     if (vis[i].recording) {
       if ((millis() - timer) > totalTime) {
         vis[i].saveFinalVal (i, vis[i].computeVal()); 
         vis[i].recording = false;
+        showCam = false; 
       }
     }
   }
 }
 
 void keyPressed () {
-  if (key == '1') vis[0].record(); 
-  if (key == '2') vis[1].record(); 
-  if (key == '3') vis[2].record(); 
-  if (key == '4') vis[3].record();
+
+  if (key == CODED) {
+    showCam = false; 
+    if (keyCode == DOWN) {
+      curViz = (curViz + 1) % 4;
+    }
+    if (keyCode == UP) {
+      if (curViz > 0) {
+        curViz--;
+      }
+      else {
+        curViz = 3;
+      }
+    }
+    
+    if (keyCode == LEFT) {
+      
+     if (curNum[curViz] < vis[curViz].valSizeMax) {
+       curNum[curViz] ++;
+     } else {
+       curNum[curViz] = vis[curViz].valSizeMax;
+     }  
+     //curNum[curViz] ++;
+     vis[curViz].setNewVal(curNum[curViz]); 
+     vis[curViz].loadNewPic(curNum[curViz]); 
+    }
+    
+   if (keyCode == RIGHT) {
+    if (curNum[curViz] >1) {
+      curNum[curViz] --;  
+    } else {
+      curNum[curViz] = 0; 
+    }
+    vis[curViz].setNewVal(curNum[curViz]); 
+    vis[curViz].loadNewPic(curNum[curViz]); 
+    }
+    
+  }
+
+
+  if (key == ENTER) {
+    if (showCam) { 
+      if (theLeap.allowRecord) {
+      vis[curViz].record();
+      } else {
+        println ("check your hands, error, not recording"); 
+      }
+    } else {
+      showCam = true; 
+    }
+  }   
+  println (curViz); 
   timer = millis();
+}
+
+void captureEvent(Capture c) {
+  c.read();
 }
 
 public void stop() {

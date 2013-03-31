@@ -2,6 +2,7 @@ class Viz {
 
   //states
   boolean recording; 
+  boolean isCur; 
 
   String title; 
   String instructions; 
@@ -12,18 +13,29 @@ class Viz {
   float startVal, endVal, finalVal; 
   float newEndVal; //constrained
   ArrayList <Val> values;
-
+  int camSize = 160; //todo make setter
+  int camLoc = width - camSize;
+  
   //history
+  int valSizeMax;
   float lastVal; 
   boolean showLast = false; 
+  PImage lastPic; 
+  boolean hasPic = false; 
+  Val lastValObj; 
+  /*
+  int lastYear, lastMonth, lastDay; 
+  int lastHour, lastMinute;
+  */
 
   //margins 
   int mTop = 35; 
   int mSides = 20;  
 
   int rX, rY; //rectangle location within Viz
-  int rW = width - mSides*2;
+  int rW = width - camSize - mSides*2;
   int rH = 30; 
+
 
   Viz(String title_) {
     title = title_;
@@ -50,6 +62,10 @@ class Viz {
     endVal = value_;
   }
 
+  void setCur (boolean cur) {
+    isCur = cur;
+  }
+
   void display() {
 
     //title for the viz
@@ -57,6 +73,23 @@ class Viz {
     line (0, 0, width, 0); 
     fill (255); 
     text (title, mSides, 25); 
+
+    if (isCur) {
+      fill (50);
+    } 
+    else {
+      fill (0);
+    }
+
+    rect (0, 0, width, 150); //todo make setter
+    if (hasPic) {
+      image (lastPic, camLoc, 20);
+     
+    } 
+    else {
+      fill (255); 
+      text ("< no pic >", camLoc + 50, 80); //todo fix coords
+    }
 
     //maps & constrains the range based on hard-coded values of the max of the working hand.
     //maximum for pitch, minimum for roll because 0 is the value for a flat hand.
@@ -101,8 +134,15 @@ class Viz {
         fill (255);
       }
       noStroke(); 
-      ellipse (width - mSides*2, mTop+rH+mTop, 20, 20);
+      ellipse (mSides*2, mTop+rH+mTop*2, 20, 20);
     }
+    
+    //timeStamps //todo lets make these separate functions
+    textSize (11); 
+    text (lastValObj.day + "/ " + lastValObj.month + "/ " + lastValObj.year, mSides, mTop+rH+mTop + 20); 
+    text (lastValObj.hour + ": " + lastValObj.minute, mSides + 90, mTop+rH+mTop + 20);
+    textSize (13); 
+    
   }
 
   float showHist(float value_) {
@@ -138,9 +178,44 @@ class Viz {
 
   float getLastVal() {
     Val tVal = (Val) values.get(values.size()-1);
+    lastValObj = tVal; 
     return tVal.value;
   }
 
+  boolean loadLastPic() {
+    lastPic = new PImage(); 
+    Val tVal = (Val) values.get(values.size()-1);    
+    if (tVal.picName.equals("none")) {
+      return false;
+    } 
+    else {
+      lastPic = loadImage ("pics/" + tVal.picName); 
+      return true;
+    }
+  }
+
+  void setNewVal(int num) {
+    valSizeMax = values.size()-1;
+   // if (num == valSizeMax) num = valSizeMax; 
+    Val tVal = (Val) values.get(values.size()-num-1);   
+    lastVal = tVal.value; 
+    lastValObj = tVal; 
+    
+    //return tVal.value;
+  }
+
+  boolean loadNewPic(int num) {
+    lastPic = new PImage(); 
+    Val tVal = (Val) values.get(values.size()-num-1);    
+    if (tVal.picName.equals("none")) {
+      return false;
+    } 
+    else {
+      lastPic = loadImage ("pics/" + tVal.picName); 
+      hasPic = true; 
+      return true;
+    }
+  }
 
   //-------------- For displaying raw values for debugging --------------------//
   void displayRaw() {
@@ -181,6 +256,7 @@ class Viz {
 
   boolean saveFinalVal(int modeNum, float theValue) {
 
+    //get values and time/date stamps
     Val thisVal = new Val(); 
     thisVal.count = values.size() + 1; 
     thisVal.day = day(); 
@@ -191,6 +267,13 @@ class Viz {
     thisVal.value = theValue; 
     thisVal.mode = modeNum; 
 
+    //save the picture
+    PImage img = video.get(); 
+    thisVal.pic = img; 
+    thisVal.picName = thisVal.mode + "_" + thisVal.count + ".png"; 
+    img.save("pics/" + thisVal.picName); 
+
+    //save to the big Values array
     values.add(thisVal); 
 
     data = new JSONArray(); 
@@ -206,8 +289,10 @@ class Viz {
         thisData.put( "minute", val.minute );
         thisData.put( "value", val.value );
         thisData.put ("mode", val.mode);
+        thisData.put ("picName", val.picName); 
 
         lastVal =  getLastVal();
+        loadLastPic(); 
         println ("new last val is: " + lastVal);
       }
       catch(JSONException e) {
@@ -245,10 +330,13 @@ class Viz {
         double temp = thisObj.getDouble ("value"); 
         thisVal.value = (float)temp; 
         thisVal.mode =thisObj.getInt ("mode"); 
+        thisVal.picName = thisObj.getString ("picName"); 
+        println (thisVal.picName); 
         values.add (thisVal); 
         println ("added: " + i);
       }
       lastVal =  getLastVal();
+      if (loadLastPic()) hasPic = true;
     } 
     catch (JSONException e) {
       println ("error: " + e);
