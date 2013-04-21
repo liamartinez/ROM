@@ -2,6 +2,9 @@ import com.onformative.leap.LeapMotionP5; /* https://github.com/mrzl/LeapMotionP
 import com.leapmotion.leap.Finger;
 import com.leapmotion.leap.Hand; 
 
+import controlP5.*;
+ControlP5 cp5;
+
 import processing.video.*;
 Capture video;
 
@@ -34,10 +37,13 @@ JSONArray data;
 
 PrintWriter output; 
 
+String textInput = ""; 
+
 void setup () {
   size (500, 800); 
   leap = new LeapMotionP5(this);
   theLeap = new leapObj();
+  cp5 = new ControlP5(this);
 
   video = new Capture(this, 160, 120);
   video.start();  
@@ -62,6 +68,11 @@ void setup () {
     println ("loading: " + i + "_" + vis[i].title + ".json");
     vis[i].loadValues(i + "_" + vis[i].title + ".json");     
   }
+  
+    PFont font = createFont("arial",20);
+    color black = color (0, 0, 0); 
+    color white = color (255, 255, 255); 
+    cp5.addTextfield("Notes").setPosition(10, height - 180).setSize(300,30).setAutoClear(false).setColorBackground(black).setColorForeground(white).setColorActive(white).setFont(font); 
 }
 
 void draw () {
@@ -105,6 +116,7 @@ void draw () {
     }
 
     if (vis[i].recording) {
+      vis[i].smoothData(); 
       if ((millis() - timer) > totalTime) {
         vis[i].saveFinalVal (i, vis[i].computeVal()); 
         vis[i].recording = false;
@@ -112,6 +124,8 @@ void draw () {
       }
     }
   }
+  //textInput from p5 transfer
+  textInput = cp5.get(Textfield.class,"Notes").getText();
 }
 
 void keyPressed () {
@@ -137,7 +151,6 @@ void keyPressed () {
      } else {
        curNum[curViz] = vis[curViz].valSizeMax;
      }  
-     //curNum[curViz] ++;
      vis[curViz].setNewVal(curNum[curViz]); 
      vis[curViz].loadNewPic(curNum[curViz]); 
     }
@@ -154,11 +167,11 @@ void keyPressed () {
     
   }
 
-
   if (key == ENTER) {
     if (showCam) { 
       if (theLeap.allowRecord) {
       vis[curViz].record();
+      vis[curViz].setDesc(textInput);     
       } else {
         println ("check your hands, error, not recording"); 
       }
@@ -168,6 +181,10 @@ void keyPressed () {
   }   
   println (curViz); 
   timer = millis();
+}
+
+public void clear() {
+  cp5.get(Textfield.class,"Notes").clear();
 }
 
 void captureEvent(Capture c) {

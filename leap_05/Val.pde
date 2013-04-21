@@ -15,6 +15,7 @@ class Val {
   
   PImage pic; 
   String picName = "none"; 
+  String desc = " "; 
   
   Val(){
   pic = createImage (160, 120, RGB);  
